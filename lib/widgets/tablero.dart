@@ -181,12 +181,11 @@ class _TableroState extends State<Tablero> {
     return Scaffold(
       appBar: AppBar(
         title:
-            //Text("M: $movimientos | ⏳ ${formatTime(segundos)} | $totales/$restantes"),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.directions_run),Text(" $movimientos  "),
-              Icon(Icons.hourglass_bottom),Text(" ${formatTime(segundos)}  "),
+              Icon(Icons.directions_run),Text(" $movimientos "),
+              Icon(Icons.hourglass_bottom),Text(" ${formatTime(segundos)} "),
               Icon(Icons.done),Text(" $totales/$restantes"),
             ],
           ),

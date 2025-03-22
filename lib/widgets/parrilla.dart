@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:memorama/db/sqlite.dart';
-import '../config/config.dart';
+import 'package:memorama/config/config.dart';
 import 'package:flip_card/flip_card.dart';
 
-import '../db/data.dart';
+import 'package:memorama/db/data.dart';
 
 class Parrilla extends StatefulWidget {
   final Nivel? nivel;
@@ -26,10 +26,8 @@ class ParrillaState extends State<Parrilla> {
 
   bool? flag, habilitado;
 
-
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     controls = [];
     card = [];
@@ -65,10 +63,10 @@ class ParrillaState extends State<Parrilla> {
   Future<bool> checkWin() async {
     bool tmp = false;
     if (totales == restantes) {
-      Data? rec = await Sqlite.find();
+      Data? save = await Sqlite.find();
       tmp = !tmp;
       Data x =
-          Data(id: 1, fecha: DateFormat('yyyy-MM-dd').format(DateTime.now()),wins: rec!.wins!+1,loses: rec.loses);
+      Data(id: 1, fecha: DateFormat('yyyy-MM-dd').format(DateTime.now()),wins: save!.wins!+1,loses: save.loses);
       await Sqlite().update(x);
     }
     return tmp;
@@ -95,13 +93,59 @@ class ParrillaState extends State<Parrilla> {
     });
   }
 
+  void handleLastPair() async {
+    if (widget.nivel == Nivel.facil) {
+      await Future.delayed(Duration(seconds: 1), () {
+        for (int i = 0; i < card.length; i++) {
+          if (state[i]) {
+            controls[i].toggleCard();
+            state[i] = false;
+          }
+        }
+        widget.showResult();
+      });
+    } else {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Último par"),
+            content: Text("¿Deseas voltear el último par?"),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  for (int i = 0; i < card.length; i++) {
+                    if (state[i]) {
+                      controls[i].toggleCard();
+                      state[i] = false;
+                    }
+                  }
+                  widget.showResult();
+                },
+                child: Text("Sí"),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("No"),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
       itemCount: card.length,
       shrinkWrap: true,
       gridDelegate:
-          SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
+      SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
       itemBuilder: (context, index) {
         return FlipCard(
             onFlip: () async {
@@ -138,10 +182,14 @@ class ParrillaState extends State<Parrilla> {
                   setState(() {
                     habilitado = true;
                   });
+
+                  if (totales - restantes == 1) {
+                    handleLastPair();
+                  }
                 } else {
                   Future.delayed(
                     Duration(seconds: 1),
-                    () {
+                        () {
                       controls.elementAt(prevclicked!).toggleCard();
                       state[prevclicked!] = true;
                       prevclicked = index;
