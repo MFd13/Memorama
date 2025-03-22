@@ -12,10 +12,7 @@ class Parrilla extends StatefulWidget {
   final Nivel? nivel;
   final VoidCallback actMovimientos, actPares, showResult;
 
-  const Parrilla(this.nivel, this.actMovimientos(), this.actPares(),
-      this.showResult,
-      {Key? key})
-      : super(key: key);
+  const Parrilla(this.nivel, this.actMovimientos(), this.actPares(), this.showResult, {super.key});
 
   @override
   ParrillaState createState() => ParrillaState();
@@ -65,9 +62,15 @@ class ParrillaState extends State<Parrilla> {
     if (totales == restantes) {
       Data? save = await Sqlite.find();
       tmp = !tmp;
-      Data x =
-      Data(id: 1, fecha: DateFormat('yyyy-MM-dd').format(DateTime.now()),wins: save!.wins!+1,loses: save.loses);
+      Data x = Data(
+          id: 1,
+          fecha: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+          hora: DateFormat('HH:mm:ss').format(DateTime.now()),
+          wins: save!.wins! + 1,
+          loses: save.loses
+      );
       await Sqlite().update(x);
+      debugPrint("Hora guardada: ${x.hora}");
     }
     return tmp;
   }

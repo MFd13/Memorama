@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:memorama/config/config.dart';
 
 class Botonera extends StatefulWidget {
-  const Botonera({Key? key}) : super(key: key);
+  const Botonera({super.key});
 
   @override
-  _BotoneraState createState() => _BotoneraState();
+  BotoneraState createState() => BotoneraState();
 }
 
-class _BotoneraState extends State<Botonera> {
+class BotoneraState extends State<Botonera> {
   @override
   Widget build(BuildContext context) {
     return Padding(

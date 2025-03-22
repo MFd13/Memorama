@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:memorama/db/data.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -12,21 +13,23 @@ class Sqlite {
   }
 
   static Future<Database> bd() async {
-    print("Path: ${await getDatabasesPath()}");
+    debugPrint("Path: ${await getDatabasesPath()}");
     return openDatabase(
       join(await getDatabasesPath(), 'datos.db'),
       onCreate: (db, version) async {
         await db.execute("""
-        CREATE TABLE datos(
-          id INTEGER PRIMARY KEY, 
-          fecha TEXT, 
-          victorias INTEGER, 
-          derrotas INTEGER
-        );
-        """);
+      CREATE TABLE datos(
+        id INTEGER PRIMARY KEY, 
+        fecha TEXT, 
+        hora TEXT,
+        victorias INTEGER, 
+        derrotas INTEGER
+      );
+      """);
         await db.insert("datos", {
           "id": 1,
-          "fecha": "2025-03-03",
+          "fecha": "2025-03-20",
+          "hora": "00:00:00",
           "victorias": 0,
           "derrotas": 0
         });
@@ -57,6 +60,7 @@ class Sqlite {
       return Data(
           id: datosMap[0]['id'],
           fecha: datosMap[0]['fecha'],
+          hora: datosMap[0]['hora'],
           wins: datosMap[0]['victorias'],
           loses: datosMap[0]['derrotas']
       );

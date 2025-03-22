@@ -8,25 +8,25 @@ import 'package:memorama/config/config.dart';
 import 'package:memorama/db/sqlite.dart';
 import 'package:memorama/widgets/parrilla.dart';
 
-import '../app/home.dart';
-import '../db/data.dart';
+import 'package:memorama/app/home.dart';
+import 'package:memorama/db/data.dart';
 
 class Tablero extends StatefulWidget {
   final Nivel? nivel;
 
-  const Tablero(this.nivel, {Key? key}) : super(key: key);
+  const Tablero(this.nivel, {super.key});
 
   @override
-  _TableroState createState() => _TableroState();
+  TableroState createState() => TableroState();
 }
 
-class _TableroState extends State<Tablero> {
+class TableroState extends State<Tablero> {
   final GlobalKey<ParrillaState> pKey = GlobalKey();
   int segundos = 0;
   Data? info;
   Timer? timer;
   bool menuExpanded = false;
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -74,14 +74,15 @@ class _TableroState extends State<Tablero> {
     setState(() {});
   }
 
-  void showResult(BuildContext context) {
+  void showResult(context) async {
+    Data? save = await Sqlite.find();
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: ( context) {
         return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           title: Column(
             children: [
               Icon(Icons.verified_sharp, size: 50),
@@ -96,9 +97,13 @@ class _TableroState extends State<Tablero> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                    "Tienes todos los pares.\n"
+                "Tienes todos los pares.\n"
                     "Movimientos: $movimientos\n"
-                    "Tiempo: ${formatTime(segundos)}",
+                    "Tiempo: ${formatTime(segundos)}\n"
+                    "Fecha: ${save?.fecha}\n"
+                    "Hora: ${save?.hora}\n"
+                    "Victorias: ${save?.wins}\n"
+                    "Derrotas: ${save?.loses}",
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 10),
@@ -124,9 +129,48 @@ class _TableroState extends State<Tablero> {
     });
   }
 
-  void reiniciar() {
-    segundos = 0;
-    pKey.currentState?.reset();
+  void reiniciar() async {
+    bool confirmado = await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Reiniciar partida"),
+          content: Text("¿Estás seguro de reiniciar? Esto contará como una derrota."),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+              child: Text("Cancelar"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+              child: Text("Aceptar"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmado == true) {
+      Data? save = await Sqlite.find();
+      Data x = Data(
+          id: 1,
+          fecha: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+          hora: DateFormat('HH:mm:ss').format(DateTime.now()),
+          wins: save!.wins,
+          loses: save.loses! + 1
+      );
+      await Sqlite().update(x);
+      debugPrint("Derrota contabilizada: ${x.toMap()}");
+
+      segundos = 0;
+      pKey.currentState?.reset();
+      setState(() {});
+    }
   }
 
   void newGame() async {
@@ -135,18 +179,75 @@ class _TableroState extends State<Tablero> {
     Data x = Data(
         id: 1,
         fecha: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+        hora: DateFormat('HH:mm:ss').format(DateTime.now()),
         wins: save!.wins,
-        loses: save.loses! + 1);
+        loses: save.loses! + 1
+    );
     await Sqlite().update(x);
     debugPrint("perdiste");
   }
 
-  Future<void> confirm(
-      BuildContext context, String message, Function onConfirm) async {
+  void salir() async {
+    if (restantes < totales) {
+      bool confirmado = await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title: Text("Salir de la partida"),
+            content: Text("¿Estas seguro de salir? Esto contará como una derrota."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(false);
+                },
+                child: Text("Cancelar"),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(true);
+                },
+                child: Text("Aceptar"),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirmado == true) {
+        Data? save = await Sqlite.find();
+        Data x = Data(
+            id: 1,
+            fecha: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+            hora: DateFormat('HH:mm:ss').format(DateTime.now()),
+            wins: save!.wins,
+            loses: save.loses! + 1
+        );
+        await Sqlite().update(x);
+        debugPrint("Derrota contabilizada: ${x.toMap()}");
+
+        if (Platform.isAndroid || Platform.isIOS) {
+          SystemNavigator.pop();
+        }
+        if (Platform.isLinux || Platform.isWindows) {
+          exit(0);
+        }
+      }
+    } else {
+      if (Platform.isAndroid || Platform.isIOS) {
+        SystemNavigator.pop();
+      }
+      if (Platform.isLinux || Platform.isWindows) {
+        exit(0);
+      }
+    }
+  }
+
+  Future<void> confirm(BuildContext context, String message, Function onConfirm) async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (context) {
         return AlertDialog(
           title: Text('Confirmar'),
           content: SingleChildScrollView(
@@ -177,7 +278,7 @@ class _TableroState extends State<Tablero> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(context) {
     return Scaffold(
       appBar: AppBar(
         title:
@@ -220,30 +321,16 @@ class _TableroState extends State<Tablero> {
                 children: [
                   ListTile(
                     leading: Icon(Icons.exit_to_app),
-                    title: Text('Salir'),
+                    title: Text("Salir"),
                     onTap: () {
-                      confirm(context, "¿Seguro que deseas salir?", () async {
-                        Data? save = await Sqlite.find();
-                        Data x = Data(
-                            id: 1,
-                            fecha: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                            wins: save!.wins,
-                            loses: save.loses);
-                        await Sqlite().update(x);
-                        if (Platform.isAndroid || Platform.isIOS) {
-                          SystemNavigator.pop();
-                        }
-                        if (Platform.isLinux || Platform.isWindows) {
-                          exit(0);
-                        }
-                      });
+                      salir();
                     },
                   ),
                   ListTile(
                     leading: Icon(Icons.refresh),
                     title: Text("Reiniciar"),
                     onTap: () {
-                      confirm(context, "¿Seguro que deseas reiniciar? Se marcará como juego perdido", reiniciar);
+                      reiniciar();
                     },
                   ),
                   ListTile(
@@ -255,7 +342,7 @@ class _TableroState extends State<Tablero> {
                         showDialog(
                           context: context,
                           barrierDismissible: true,
-                          builder: (BuildContext context) {
+                          builder: (context) {
                             return AlertDialog(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                               title: Text("Display de información"),
@@ -307,12 +394,7 @@ class _TableroState extends State<Tablero> {
               IconButton(
                 icon: Icon(Icons.exit_to_app),
                 onPressed: () {
-                  if (Platform.isAndroid || Platform.isIOS) {
-                    SystemNavigator.pop();
-                  }
-                  if (Platform.isLinux || Platform.isWindows) {
-                    exit(0);
-                  }
+                  salir();
                 },
               ),
               IconButton(

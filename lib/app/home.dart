@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 
-import '../config/config.dart';
 import '../widgets/botonera.dart';
 
 class Home extends StatefulWidget {
